@@ -32,7 +32,7 @@ router.post('/register', async (req, res) => {
           const password = hashedpassword
           const newUser = new userModel({name,email,password});
           try {const hola= await newUser.save()
-               res.send({user:hola._id})}
+               res.send({user_id:hola._id})}
           catch (err) { res.status(400).send(err) }
           }
      }     
@@ -66,7 +66,7 @@ router.post("/login",async (req, res) => {
                }
                else {
                     //create a token
-                    const token = jwt.sign({ _id: user._id }, process.env.TOKEN_SECRET)
+                    const token = jwt.sign({ _id: user._id,name:user.name }, process.env.TOKEN_SECRET)
                     res.header('auth-token',token).send(token)
                     
                }
