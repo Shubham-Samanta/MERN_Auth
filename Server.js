@@ -2,6 +2,7 @@
 const express = require('express')
 const cors = require('cors')
 const mongoose = require('mongoose')
+const cookie_pareser = require("cookie-parser")
 require('dotenv').config();
 
 const app = express()
@@ -12,6 +13,7 @@ const post=require('./Routes/exampleOfPrivateRoute')
 //middleware
 app.use(cors())
 app.use(express.json())
+app.use(cookie_pareser())
 
 
 //connect to DB

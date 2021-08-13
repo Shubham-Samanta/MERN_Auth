@@ -1,9 +1,12 @@
 const router = require("express").Router()
 const userModel = require("../Models/User")
+const authModel=require ("../Models/AuthId")
 const { registerValidation, loginValidation } = require("../Models/Validation")
 const bycrypt = require("bcrypt")
 const jwt=require('jsonwebtoken')
-
+const Cryptr = require('cryptr')
+const cryptr = new Cryptr(process.env.TOKEN_ENCRYPT)
+const verify =require("../middleware/verifyToken")
 
 //REGISTER
 router.post('/register', async (req, res) => {
@@ -32,7 +35,7 @@ router.post('/register', async (req, res) => {
           const password = hashedpassword
           const newUser = new userModel({name,email,password});
           try {const hola= await newUser.save()
-               res.send({user_id:hola._id})}
+               res.send("you have been registered")}
           catch (err) { res.status(400).send(err) }
           }
      }     
@@ -41,7 +44,7 @@ router.post('/register', async (req, res) => {
 
 
 //LOGIN
-router.post("/login",async (req, res) => {
+router.post("/login", async (req, res) => {
      //Login Validation
      const { error } = loginValidation(req.body)
      
@@ -66,12 +69,38 @@ router.post("/login",async (req, res) => {
                }
                else {
                     //create a token
-                    const token = jwt.sign({ _id: user._id,name:user.name }, process.env.TOKEN_SECRET)
-                    res.header('auth-token',token).send(token)
+                    const token = jwt.sign({ _id: user._id,name:user.name }, process.env.TOKEN_SECRET,{
+                         expiresIn: '1d' // expires in 365 days
+                    })
                     
+                    // add this token to the mongo DB
+                    const _id = user._id
+                    const newAuth = new authModel({
+                         _id,
+                         token
+                    });
+                    try {
+                         const hola = await newAuth.save()
+                         }
+                    catch (err) { res.status(400).send(err) }
+
+                    //sending cookies to the client side
+                    const entoken = cryptr.encrypt(token); 
+                    //,path:"/user"  ,domain:"http://localhost:5000"
+                    res.cookie('authtoken',entoken,{httpOnly:true,sameSite:"lax"})
+                    res.send("you are logged in")
                }
 
           }
-     }
+     }   
+})
+
+//Logout
+router.delete("/logout",verify ,async (req, res) => {
+          authModel.findByIdAndDelete(req.user._id)
+               .then(() => {
+                    res.clearCookie("authtoken").send("uid has been deleted")
+               })
+               .catch((err)=>{res.status(400).json(err)})
 })
 module.exports = router;
